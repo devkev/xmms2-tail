@@ -1,0 +1,5 @@
+line: "{playback_status_icon} [{playlist_current_position}/{playlist_num_entries}] {playback_current_info[tracknr]}. {playback_current_info[title]} ({playback_current_info[duration_formatted]}) - {playback_current_info[album]} ({playback_current_info[date]}) - {playback_current_info[artist]}"
+playback_status_icons:
+  stop: '  ⏹ '
+  play: '  ⏵ '
+  pause: '  ⏸ '
