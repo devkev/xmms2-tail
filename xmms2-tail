@@ -1,6 +1,10 @@
 #!/usr/bin/env python2
+# -*- coding: utf-8 -*-
 
 # based on https://stackoverflow.com/questions/17781558/xmms2-track-change-detection-for-pynotify
+
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import xmmsclient
 import xmmsclient.glib
@@ -8,34 +12,112 @@ import os
 import sys
 import gobject
 import json
+import yaml
+import copy
+import io
+import sys
 
-first = True
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
-def cb(result):
+default_config = {
+    'line': '{playback_status_icon} ({playlist_current_position}/{playlist_num_entries}) {playback_current_info[title]} - {playback_current_info[album]} - {playback_current_info[artist]}',
+
+    'playback_status_icons': {
+        'stop': '[⏹]',
+        #'play': '[▶]',  # this play icon doesn't have the same width as stop and pause (in non-monospaced fonts)
+        'play': '[⏵]',  # this play icon does
+        'pause': '[⏸]',
+
+        #'stop': '⏹️',
+        #'play': '▶️',
+        #'pause': '⏸️',
+    },
+}
+#eprint(repr(default_config))
+
+info = {
+    'config': copy.deepcopy(default_config),
+    'config_fname': os.environ['HOME'] + '/.xmms2-tail.yaml',
+    'config_fname_mtime': 0,
+}
+
+try:
+    info['config_fname_mtime'] = os.path.getmtime(info['config_fname'])
+except:
+    eprint("unable to get config file mtime")
+    pass
+
+# 0 = stopped, 1 = playing, 2 = paused
+playback_status_icon_name = [ 'stop', 'play', 'pause' ]
+
+def update(name, result):
     if not result.is_error():
-        #print(`result`)
-        #print(`result.value()`)
-        #print(`result.value()`)
-        #title = result.value()["title"]
-        #print(title)
-        #print("%(title)s" % result.value())
-        #print("%(artist)s - %(album)s - %(title)s" % result.value())
-        #print("%(title)s - %(album)s - %(artist)s" % result.value())
-        global first
-        print("%s%s" % ("" if first else ",", json.dumps([{"name":"output","min_width":1915,"full_text":"%(title)s - %(album)s - %(artist)s" % result.value()}])))
-        sys.stdout.flush()
-        first = False
+        global info
 
-print('{"version":1}')
-print('[')
-sys.stdout.flush()
+        value = result.value()
+        #eprint(name, repr(value))
+        info[name] = value
+
+        try:
+            new_mtime = os.path.getmtime(info['config_fname'])
+            if new_mtime != info['config_fname_mtime']:
+                eprint("reading config file")
+                with io.open(info['config_fname'], mode='r', encoding='utf-8') as stream:
+                    # FIXME: merge the config file into default_config, and use that
+                    info['config'] = yaml.safe_load(stream)
+                    info['config']['line'] = info['config']['line'].decode('utf-8')
+                    #eprint(repr(info['config']))
+                    info['config_fname_mtime'] = new_mtime
+        except:
+            eprint("unable to read config file")
+            pass
+
+        if 'playback_status' in info:
+            info['playback_status_icon'] = info['config']['playback_status_icons'][playback_status_icon_name[info['playback_status']]]
+
+        if name == 'playlist_current_pos':
+            info['playlist_current_position'] = value["position"] + 1
+
+        if name == 'playlist_list_entries':
+            info['playlist_num_entries'] = len(value)
+
+        if name == 'playback_current_id':
+            xc.medialib_get_info(value, cb = update_for('playback_current_info'))
+
+        if name == 'playlist_current_pos':
+            xc.playlist_list_entries(cb = update_for('playlist_list_entries'))
+
+        if name == 'playlist_list_entries':
+            xc.medialib_get_info(info['playlist_list_entries'][info['playlist_current_pos']["position"]], cb = update_for('playback_current_info'))
+
+        #eprint(repr(info))
+        #eprint()
+        try:
+            print(info['config']['line'].format(**info).encode('utf-8'))
+        except KeyError:
+            pass
+        #eprint()
+        sys.stdout.flush()
+
+def update_for(name):
+    return lambda r: update(name, r)
 
 ml = gobject.MainLoop(None, False)
 
-xc = xmmsclient.XMMS("stackoverflow")
+xc = xmmsclient.XMMS("xmms2-tail")
 xc.connect()
 
 conn = xmmsclient.glib.GLibConnector(xc)
-xc.playback_current_id(lambda r: xc.medialib_get_info(r.value(), cb))
-xc.broadcast_playback_current_id(lambda r: xc.medialib_get_info(r.value(), cb))
+
+xc.broadcast_playback_current_id(cb = update_for('playback_current_id'))
+xc.broadcast_playback_status(cb = update_for('playback_status'))
+xc.broadcast_playlist_current_pos(cb = update_for('playlist_current_pos'))
+xc.broadcast_playlist_changed(cb = update_for('playlist_changed'))
+
+xc.playback_current_id(cb = update_for('playback_current_id'))
+xc.playlist_current_active(cb = update_for('playlist_current_active'))
+xc.playlist_current_pos(cb = update_for('playlist_current_pos'))
+xc.playback_status(cb = update_for('playback_status'))
+
 ml.run()
