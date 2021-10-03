@@ -42,12 +42,6 @@ info = {
     'config_fname_mtime': 0,
 }
 
-try:
-    info['config_fname_mtime'] = os.path.getmtime(info['config_fname'])
-except:
-    eprint("unable to get config file mtime")
-    pass
-
 # 0 = stopped, 1 = playing, 2 = paused
 playback_status_icon_name = [ 'stop', 'play', 'pause' ]
 
@@ -62,15 +56,16 @@ def update(name, result):
         try:
             new_mtime = os.path.getmtime(info['config_fname'])
             if new_mtime != info['config_fname_mtime']:
-                eprint("reading config file")
+                #eprint("xmms2-tail: reading config file")
                 with io.open(info['config_fname'], mode='r', encoding='utf-8') as stream:
-                    # FIXME: merge the config file into default_config, and use that
+                    # FIXME: merge the config file into default_config, and use that.
+                    # Probably not - there's no clean, easy, idiomatic way to do that (even though there should be).
                     info['config'] = yaml.safe_load(stream)
                     info['config']['line'] = info['config']['line'].decode('utf-8')
                     #eprint(repr(info['config']))
                     info['config_fname_mtime'] = new_mtime
         except:
-            eprint("unable to read config file")
+            eprint("xmms2-tail: unable to read config file")
             pass
 
         if 'playback_status' in info:
