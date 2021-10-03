@@ -71,7 +71,7 @@ class MyFormatter(string.Formatter):
         try:
             return super(MyFormatter, self).get_field(field, *args, **kwargs)
         except (KeyError, IndexError) as err:
-            return ('¿{}?'.format(err), field)
+            return (u'¿{}?'.format(err), field)
         except TypeError as err:
             return ('?', field)
 
@@ -79,7 +79,7 @@ class MyFormatter(string.Formatter):
         try:
             return super(MyFormatter, self).get_value(key, *args, **kwargs)
         except (KeyError, IndexError) as err:
-            return '¿{}?'.format(err)
+            return u'¿{}?'.format(err)
         except TypeError as err:
             return '?'
 
@@ -145,11 +145,11 @@ def update(name, result):
             new_mtime = os.path.getmtime(info['config_fname'])
             if new_mtime != info['config_fname_mtime']:
                 #eprint("xmms2-tail: reading config file")
-                with io.open(info['config_fname'], mode='r', encoding='utf-8') as stream:
+                with io.open(info['config_fname'], mode='r') as stream:
                     # FIXME: merge the config file into default_config, and use that.
                     # Probably not - there's no clean, easy, idiomatic way to do that (even though there should be).
                     info['config'] = yaml.safe_load(stream)
-                    info['config']['line'] = info['config']['line'].decode('utf-8')
+                    info['config']['line'] = info['config']['line']
                     #eprint(repr(info['config']))
                     info['config_fname_mtime'] = new_mtime
         except:
@@ -182,7 +182,7 @@ def update(name, result):
 
         #eprint(repr(info))
         #eprint()
-        print(formatter.format(info['config']['line'], **info).encode('utf-8'))
+        print(formatter.format(info['config']['line'], **info))
         #eprint()
         sys.stdout.flush()
 
