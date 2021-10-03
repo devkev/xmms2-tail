@@ -16,6 +16,27 @@ import yaml
 import copy
 import io
 import sys
+import string
+
+
+class MyFormatter(string.Formatter):
+    def get_field(self, field, *args, **kwargs):
+        try:
+            return super(MyFormatter, self).get_field(field, *args, **kwargs)
+        except (KeyError, IndexError) as err:
+            return ('¿{}?'.format(err), field)
+        except TypeError as err:
+            return ('?', field)
+
+    def get_value(self, key, *args, **kwargs):
+        try:
+            return super(MyFormatter, self).get_value(key, *args, **kwargs)
+        except (KeyError, IndexError) as err:
+            return '¿{}?'.format(err)
+        except TypeError as err:
+            return '?'
+
+formatter = MyFormatter()
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -91,12 +112,14 @@ def update(name, result):
         if 'playback_status' in info:
             info['playback_status_icon'] = info['config']['playback_status_icons'][playback_status_icon_name[info['playback_status']]]
 
-        if 'playback_current_info' in info:
-            if 'duration' in info['playback_current_info']:
-                info['playback_current_info'][('foo', 'duration_formatted')] = format_timedelta(info['playback_current_info']['duration'])
-
         if name == 'playlist_current_pos':
             info['playlist_current_position'] = value["position"] + 1
+
+        if 'playback_current_info' in info:
+            if 'duration' in info['playback_current_info']:
+                info['playback_current_info'][('unused', 'duration_formatted')] = format_timedelta(info['playback_current_info']['duration'])
+            if 'tracknr' not in info['playback_current_info']:
+                info['playback_current_info'][('unused', 'tracknr')] = '({})'.format(info['playlist_current_position'])
 
         if name == 'playlist_list_entries':
             info['playlist_num_entries'] = len(value)
@@ -112,10 +135,7 @@ def update(name, result):
 
         #eprint(repr(info))
         #eprint()
-        try:
-            print(info['config']['line'].format(**info).encode('utf-8'))
-        except KeyError as err:
-            print('Error: file is missing key needed by format line: {}'.format(err))
+        print(formatter.format(info['config']['line'], **info).encode('utf-8'))
         #eprint()
         sys.stdout.flush()
 
