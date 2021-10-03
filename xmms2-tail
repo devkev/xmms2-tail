@@ -20,8 +20,28 @@ import sys
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
+def format_timedelta(secs):
+    seconds = int(secs / 1000)
+
+    secs_in_a_hour = 3600
+    secs_in_a_min = 60
+
+    hours, seconds = divmod(seconds, secs_in_a_hour)
+    minutes, seconds = divmod(seconds, secs_in_a_min)
+
+    time_fmt = "{seconds:02d}".format(**locals())
+
+    if hours > 0:
+        time_fmt = "{minutes:02d}:{time_fmt}".format(**locals())
+        time_fmt = "{hours:d}:{time_fmt}".format(**locals())
+    else:
+        time_fmt = "{minutes:d}:{time_fmt}".format(**locals())
+    return time_fmt
+
+
 default_config = {
     'line': '{playback_status_icon} ({playlist_current_position}/{playlist_num_entries}) {playback_current_info[title]} - {playback_current_info[album]} - {playback_current_info[artist]}',
+    #'line': '{playback_status_icon} [{playlist_current_position}/{playlist_num_entries}] {playback_current_info[tracknr]}. {playback_current_info[title]} ({playback_current_info[duration_formatted]}) - {playback_current_info[album]} ({playback_current_info[date]}) - {playback_current_info[artist]}',
 
     'playback_status_icons': {
         'stop': '[⏹]',
@@ -71,6 +91,10 @@ def update(name, result):
         if 'playback_status' in info:
             info['playback_status_icon'] = info['config']['playback_status_icons'][playback_status_icon_name[info['playback_status']]]
 
+        if 'playback_current_info' in info:
+            if 'duration' in info['playback_current_info']:
+                info['playback_current_info'][('foo', 'duration_formatted')] = format_timedelta(info['playback_current_info']['duration'])
+
         if name == 'playlist_current_pos':
             info['playlist_current_position'] = value["position"] + 1
 
@@ -90,7 +114,8 @@ def update(name, result):
         #eprint()
         try:
             print(info['config']['line'].format(**info).encode('utf-8'))
-        except KeyError:
+        except KeyError as err:
+            #print(err)
             pass
         #eprint()
         sys.stdout.flush()
