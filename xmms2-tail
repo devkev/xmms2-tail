@@ -1,0 +1,41 @@
+#!/usr/bin/env python2
+
+# based on https://stackoverflow.com/questions/17781558/xmms2-track-change-detection-for-pynotify
+
+import xmmsclient
+import xmmsclient.glib
+import os
+import sys
+import gobject
+import json
+
+first = True
+
+def cb(result):
+    if not result.is_error():
+        #print(`result`)
+        #print(`result.value()`)
+        #print(`result.value()`)
+        #title = result.value()["title"]
+        #print(title)
+        #print("%(title)s" % result.value())
+        #print("%(artist)s - %(album)s - %(title)s" % result.value())
+        #print("%(title)s - %(album)s - %(artist)s" % result.value())
+        global first
+        print("%s%s" % ("" if first else ",", json.dumps([{"name":"output","min_width":1915,"full_text":"%(title)s - %(album)s - %(artist)s" % result.value()}])))
+        sys.stdout.flush()
+        first = False
+
+print('{"version":1}')
+print('[')
+sys.stdout.flush()
+
+ml = gobject.MainLoop(None, False)
+
+xc = xmmsclient.XMMS("stackoverflow")
+xc.connect()
+
+conn = xmmsclient.glib.GLibConnector(xc)
+xc.playback_current_id(lambda r: xc.medialib_get_info(r.value(), cb))
+xc.broadcast_playback_current_id(lambda r: xc.medialib_get_info(r.value(), cb))
+ml.run()
