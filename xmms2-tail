@@ -115,8 +115,7 @@ def update(name, result):
         try:
             print(info['config']['line'].format(**info).encode('utf-8'))
         except KeyError as err:
-            #print(err)
-            pass
+            print('Error: file is missing key needed by format line: {}'.format(err))
         #eprint()
         sys.stdout.flush()
 
