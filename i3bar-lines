@@ -1,0 +1,6 @@
+#!/bin/bash
+
+echo '{"version":1}'
+echo '['
+#stdbuf -o0 "$@" | stdbuf -i0 -o0 awk '{printf("%s[{\"name\":\"output\",\"min_width\":1915,\"full_text\":\"%s\"}]\n", (NR==1?"":","), $0);}'
+stdbuf -o0 "$@" | stdbuf -i0 -o0 jq -caR '[{"name":"output","min_width":1915,"full_text":.}]' | stdbuf -i0 -o0 awk '{printf("%s%s\n", (NR==1?"":","), $0);}'
