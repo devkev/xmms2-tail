@@ -1,0 +1,17 @@
+xmms2-tail
+==========
+
+Installation
+------------
+
+- python2
+  - `sudo apt install python-xmmsclient python-gobject-2`
+
+- python3
+  - `sudo apt install python3-xmmsclient python-gi`
+    - use the `xmms2-tail` from the python3 branch
+
+- copy files
+  - `xmms2-tail` goes into `$PATH`
+  - `.xmms2-tail.yaml` goes into `$HOME` and edited to taste
+
