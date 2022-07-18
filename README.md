@@ -15,12 +15,12 @@ Installation
   - `xmms2-tail` goes into `$PATH`
   - `.xmms2-tail.yaml` goes into `$HOME` and edited to taste
 
-- i3bar
-  - `i3bar-lines` goes into `$PATH`
+- i3bar (optional)
+  - `i3bar-lines` and `respawn` go into `$PATH`
   - then add an i3 `bar` section into its config file something like this:
 
         bar {
-            status_command i3bar-lines xmms2-tail
+            status_command respawn 1 xmms2-tail | i3bar-lines 
             position top
             workspace_buttons no
             binding_mode_indicator no
