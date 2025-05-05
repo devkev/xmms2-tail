@@ -126,7 +126,7 @@ default_config = {
 
 info = {
     'config': copy.deepcopy(default_config),
-    'config_fname': os.environ['HOME'] + '/.xmms2-tail.yaml',
+    'config_fname': os.environ.get('XMMS2_TAIL_YAML', os.environ['HOME'] + '/.xmms2-tail.yaml'),
     'config_fname_mtime': 0,
 }
 
